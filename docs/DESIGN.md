@@ -1,4 +1,4 @@
-# wilhelm_kiosk — Design
+# wilhelmos_kiosk — Design
 
 Status: v0.1.0 skeleton — API surface fixed, implementations stubbed
 (`todo!()`). This document is the authoritative record of what the crate is,
@@ -7,7 +7,7 @@ decision-log conventions follow `wilhelm_renderer/docs/DESIGN.md`.
 
 ## 1. Positioning
 
-`wilhelm_kiosk` is an **opinionated application framework** for building
+`wilhelmos_kiosk` is an **opinionated application framework** for building
 fullscreen kiosk applications on WilhelmOS, layered strictly above
 `wilhelm_renderer` (2D OpenGL engine) and `wilhelm_renderer_imgui` (Dear
 ImGui binding). It exists because both real consumers of the raw stack —
@@ -28,7 +28,7 @@ Deliberate scope boundaries *(decided 2026-07-25)*:
 - **Pure library, in-process, no new system moving parts.** The WilhelmOS
   platform contracts (`cage-kiosk.service`, `/usr/libexec/kiosk-app`,
   `KIOSK_APP`, `virtual/kiosk-app` — wilhelmos `docs/DESIGN.md` §7) are
-  untouched. A wilhelm_kiosk app is an ordinary kiosk-app package.
+  untouched. A wilhelmos_kiosk app is an ordinary kiosk-app package.
 - **Use it or omit it.** Integrators may keep building on raw
   `wilhelm_renderer::core::App`. Nothing in the platform or the sibling
   crates assumes this framework.
@@ -280,7 +280,7 @@ display application) for no operational need a status display has.
   variables consumed by the sys build scripts (`GLRENDERER_BUILD_X11`,
   `GLRENDERER_LINK_GL`); this crate adds none and passes those through
   untouched — the WilhelmOS recipe pattern (`wilhelmos-kiosk-demo_git.bb`)
-  works unchanged for a wilhelm_kiosk app.
+  works unchanged for a wilhelmos_kiosk app.
 - **Release rule (family-wide):** a tagged release must have zero git
   dependencies in `Cargo.lock` — integrator apps are built by Yocto's
   `cargo-update-recipe-crates` flow, which fetches every locked crate

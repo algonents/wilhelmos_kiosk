@@ -1020,14 +1020,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a28ac98ddc8b9274cb41bb4d9d4d5c425b6020c50c46f25559911905610b4a88"
 
 [[package]]
-name = "wilhelm_kiosk"
-version = "0.1.0"
-dependencies = [
- "wilhelm_renderer",
- "wilhelm_renderer_imgui",
-]
-
-[[package]]
 name = "wilhelm_renderer"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1054,6 +1046,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "233c7c9b999d08c9d1dd83e47da0f4f2a4743dde2911a367ce6ac1624729beb3"
 dependencies = [
  "cmake",
+]
+
+[[package]]
+name = "wilhelmos_kiosk"
+version = "0.1.0"
+dependencies = [
+ "wilhelm_renderer",
+ "wilhelm_renderer_imgui",
 ]
 
 [[package]]

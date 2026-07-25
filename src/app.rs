@@ -95,7 +95,7 @@ impl std::error::Error for KioskError {}
 /// init-order invariant (window callbacks → ImGui → renderer → app init).
 ///
 /// ```no_run
-/// # use wilhelm_kiosk::{Kiosk, KioskApp, KioskError, Color};
+/// # use wilhelmos_kiosk::{Kiosk, KioskApp, KioskError, Color};
 /// # #[derive(Default)] struct MyApp;
 /// # impl KioskApp for MyApp {}
 /// # fn main() -> Result<(), KioskError> {

@@ -1,4 +1,4 @@
-# wilhelm_kiosk
+# wilhelmos_kiosk
 
 Opinionated application framework for fullscreen kiosk apps, layered on
 `wilhelm_renderer` + `wilhelm_renderer_imgui`. Primary deployment target:

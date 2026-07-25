@@ -16,7 +16,7 @@ use crate::context::Context;
 /// # Composition
 ///
 /// ```no_run
-/// # use wilhelm_kiosk::{Clock, Context, KioskApp, KioskError};
+/// # use wilhelmos_kiosk::{Clock, Context, KioskApp, KioskError};
 /// struct MyApp { clock: Clock }
 ///
 /// impl KioskApp for MyApp {

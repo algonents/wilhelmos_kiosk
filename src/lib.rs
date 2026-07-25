@@ -1,4 +1,4 @@
-//! # wilhelm_kiosk
+//! # wilhelmos_kiosk
 //!
 //! Opinionated application framework for fullscreen kiosk applications
 //! built on [`wilhelm_renderer`] and Dear ImGui (via `wilhelm_renderer_imgui`).
@@ -9,7 +9,7 @@
 //! sharing between closures.
 //!
 //! ```no_run
-//! use wilhelm_kiosk::{Color, Context, Kiosk, KioskApp, KioskError, Ui};
+//! use wilhelmos_kiosk::{Color, Context, Kiosk, KioskApp, KioskError, Ui};
 //!
 //! #[derive(Default)]
 //! struct MyApp {

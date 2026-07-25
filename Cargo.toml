@@ -1,11 +1,11 @@
 [package]
-name = "wilhelm_kiosk"
+name = "wilhelmos_kiosk"
 version = "0.1.0"
 edition = "2021"
 authors = ["Anwar Ludin <anwar.ludin@algonents.com>"]
 description = "Opinionated application framework for fullscreen kiosk applications built on wilhelm_renderer and Dear ImGui"
 license = "MIT"
-repository = "https://github.com/algonents/wilhelm_kiosk"
+repository = "https://github.com/algonents/wilhelmos_kiosk"
 keywords = ["kiosk", "opengl", "gui", "framework", "graphics"]
 categories = ["gui", "graphics", "rendering"]
 exclude = ["CLAUDE.md"]

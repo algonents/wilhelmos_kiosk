@@ -1,11 +1,11 @@
-//! The WilhelmOS reference demo, rewritten against wilhelm_kiosk.
+//! The WilhelmOS reference demo, rewritten against wilhelmos_kiosk.
 //!
 //! Compare with `wilhelmos-kiosk-demo/src/main.rs` (the raw-stack
 //! original): same behavior — a movable, scalable triangle with an ImGui
 //! control panel — but state lives in plain struct fields and there is not
 //! a single `Rc<RefCell<..>>` in sight.
 
-use wilhelm_kiosk::{
+use wilhelmos_kiosk::{
     Color, Context, Kiosk, KioskApp, KioskError, ShapeId, ShapeKind, ShapeRenderable, ShapeStyle,
     Ui,
 };

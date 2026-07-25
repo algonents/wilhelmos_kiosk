@@ -1,4 +1,4 @@
-# wilhelm_kiosk
+# wilhelmos_kiosk
 
 Opinionated application framework for fullscreen kiosk applications, built
 on [wilhelm_renderer](https://github.com/algonents/wilhelm_renderer) and
@@ -18,7 +18,7 @@ Applications built on the raw stack all rewrite the same boilerplate:
 init ordering, `Rc<RefCell<..>>` state shared between callbacks, the ImGui
 frame sandwich, capture-filter wiring, FPS counting — and usually ship with
 no panic reporting or SIGTERM handling despite running under systemd
-supervision. `wilhelm_kiosk` absorbs all of that behind one lifecycle
+supervision. `wilhelmos_kiosk` absorbs all of that behind one lifecycle
 trait:
 
 - **`KioskApp` trait** — `init` / `update(dt)` / `ui` / `on_event` /
@@ -39,11 +39,11 @@ trait:
 
 ```toml
 [dependencies]
-wilhelm_kiosk = "0.1"
+wilhelmos_kiosk = "0.1"
 ```
 
 ```rust,no_run
-use wilhelm_kiosk::{Color, Context, Kiosk, KioskApp, KioskError, Ui};
+use wilhelmos_kiosk::{Color, Context, Kiosk, KioskApp, KioskError, Ui};
 
 #[derive(Default)]
 struct MyApp {
@@ -80,7 +80,7 @@ Wayland-only embedded builds use `GLRENDERER_BUILD_X11=OFF` and
 
 ## Issues
 
-https://github.com/algonents/wilhelm_kiosk/issues
+https://github.com/algonents/wilhelmos_kiosk/issues
 
 ## License
 
