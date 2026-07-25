@@ -7,7 +7,7 @@
 //! defaults (`NO_SAVED_SETTINGS`, so no `imgui.ini` is written on the
 //! appliance's read-mostly rootfs).
 
-use wilhelm_renderer_imgui::ImGui;
+use wilhelm_renderer_imgui::{cond, window_flags, ImGui};
 
 /// Scoped ImGui wrapper handed to [`crate::KioskApp::ui`] each frame.
 ///
@@ -19,7 +19,6 @@ pub struct Ui<'a> {
 }
 
 impl<'a> Ui<'a> {
-    #[allow(dead_code)] // constructed by the frame loop (`Kiosk::run`), still a stub
     pub(crate) fn new(imgui: &'a ImGui) -> Self {
         Self { imgui }
     }
@@ -29,8 +28,14 @@ impl<'a> Ui<'a> {
     /// `window_flags::NO_SAVED_SETTINGS` is OR-ed into `flags`
     /// unconditionally.
     pub fn window(&self, title: &str, flags: i32, body: impl FnOnce(&ImGui)) {
-        let _ = (title, flags, body);
-        todo!("begin/end pairing with NO_SAVED_SETTINGS default — DESIGN.md §7")
+        let visible = self
+            .imgui
+            .begin(title, None, flags | window_flags::NO_SAVED_SETTINGS);
+        if visible {
+            body(self.imgui);
+        }
+        // Dear ImGui requires End() even when Begin() returned false.
+        self.imgui.end();
     }
 
     /// [`Ui::window`] with an explicit position (and optional size) applied
@@ -44,15 +49,19 @@ impl<'a> Ui<'a> {
         flags: i32,
         body: impl FnOnce(&ImGui),
     ) {
-        let _ = (title, pos, size, flags, body);
-        todo!("positioned window with begin/end pairing — DESIGN.md §7")
+        self.imgui.set_next_window_pos(pos.0, pos.1, cond::ALWAYS);
+        if let Some((width, height)) = size {
+            self.imgui.set_next_window_size(width, height, cond::ALWAYS);
+        }
+        self.window(title, flags, body);
     }
 
     /// Run `body` inside a pushed ImGui ID scope — the escape hatch for
     /// building repeated widgets in a loop without label collisions.
     pub fn with_id(&self, id: &str, body: impl FnOnce(&ImGui)) {
-        let _ = (id, body);
-        todo!("push_id/pop_id pairing — DESIGN.md §7")
+        self.imgui.push_id(id);
+        body(self.imgui);
+        self.imgui.pop_id();
     }
 
     /// The underlying [`ImGui`] handle, for widget calls outside a scoped

@@ -11,10 +11,6 @@
 //! semantics (SA_RESTART control) are deliberately deferred until a
 //! concrete need appears.
 
-// Everything here is consumed by the frame loop (`Kiosk::run`), which is
-// still a stub; drop this allow when the loop lands.
-#![allow(dead_code)]
-
 use std::sync::atomic::{AtomicBool, Ordering};
 
 static SHOULD_EXIT: AtomicBool = AtomicBool::new(false);

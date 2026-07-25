@@ -1,9 +1,14 @@
 //! The [`KioskApp`] lifecycle trait, the [`Kiosk`] runner, and [`KioskError`].
 
+use std::cell::RefCell;
+use std::collections::VecDeque;
+use std::rc::Rc;
+
 use crate::context::Context;
-use crate::event::Event;
+use crate::event::{Action, Event, Key, Mods, MouseButton};
 use crate::ui::Ui;
-use wilhelm_renderer::core::{Camera2D, Color};
+use wilhelm_renderer::core::{Camera2D, CameraController, Color, Renderer, Window};
+use wilhelm_renderer_imgui::ImGui;
 
 /// The application lifecycle. Implement this for your kiosk application —
 /// and hold your state as plain fields: every method receives `&mut self`,
@@ -39,6 +44,15 @@ pub trait KioskApp {
     /// animations here.
     fn update(&mut self, ctx: &mut Context, dt: f32) {
         let _ = (ctx, dt);
+    }
+
+    /// Called once per frame after the managed shape store has rendered and
+    /// before the ImGui pass — the place for custom draw calls against
+    /// [`Context::renderer`] (text runs, meshes, camera-projected world
+    /// content). Draw calls made anywhere else land before the frame is
+    /// cleared and vanish.
+    fn draw(&mut self, ctx: &mut Context) {
+        let _ = ctx;
     }
 
     /// Called once per frame between `ImGui::new_frame` and `ImGui::render`.
@@ -105,7 +119,6 @@ impl std::error::Error for KioskError {}
 /// # }
 /// ```
 pub struct Kiosk {
-    #[allow(dead_code)] // consumed by `run` (window title), still a stub
     title: String,
     background: Color,
     camera: Option<Camera2D>,
@@ -178,9 +191,149 @@ impl Kiosk {
     /// SIGTERM/SIGINT arrives; returns [`KioskError::AppPanic`] if the
     /// application panicked (callers should exit nonzero so systemd's
     /// `Restart=on-failure` takes over).
-    pub fn run(self, app: impl KioskApp) -> Result<(), KioskError> {
-        let _ = app;
-        todo!("owned frame loop — see docs/DESIGN.md §3")
+    pub fn run(self, mut app: impl KioskApp) -> Result<(), KioskError> {
+        let Kiosk {
+            title,
+            background,
+            camera,
+            camera_smoothness,
+            camera_zoom_limits,
+            target_fps,
+        } = self;
+
+        crate::log::install_panic_hook();
+        crate::signal::install();
+
+        // The Box<Window> is FFI-load-bearing (GLFW user pointer) and must
+        // never be moved out; it lives on this stack frame for the whole
+        // session and is dropped last (declared first).
+        let mut window = Window::new_fullscreen(&title, background);
+        let size = (window.width(), window.height());
+
+        // Window callbacks are 'static, so events cross into the loop via a
+        // shared queue — the one piece of Rc plumbing the framework exists
+        // to hide. Registered BEFORE ImGui::new so ImGui's GLFW backend
+        // chains them (see docs/DESIGN.md §3).
+        let events: Rc<RefCell<VecDeque<Event>>> = Rc::new(RefCell::new(VecDeque::new()));
+        {
+            let q = Rc::clone(&events);
+            window.on_key(move |key, _scancode, action, mods| {
+                q.borrow_mut().push_back(Event::Key {
+                    key: Key(key),
+                    action: Action(action),
+                    mods: Mods(mods),
+                });
+            });
+            let q = Rc::clone(&events);
+            window.on_mouse_button(move |button, action, mods| {
+                q.borrow_mut().push_back(Event::MouseButton {
+                    button: MouseButton(button),
+                    action: Action(action),
+                    mods: Mods(mods),
+                });
+            });
+            let q = Rc::clone(&events);
+            window.on_cursor_position(move |x, y| {
+                q.borrow_mut().push_back(Event::CursorPos { x, y });
+            });
+            let q = Rc::clone(&events);
+            window.on_scroll(move |x, y| {
+                q.borrow_mut().push_back(Event::Scroll { x, y });
+            });
+            let q = Rc::clone(&events);
+            window.on_resize(move |width, height| {
+                q.borrow_mut().push_back(Event::Resize { width, height });
+            });
+        }
+
+        // ImGui after callback registration; declared after `window` so its
+        // Drop (ImGui/GL backend shutdown) runs before the window's.
+        let imgui = ImGui::new(window.glfw_window_ptr(), true);
+
+        let renderer = Renderer::new(window.handle());
+
+        let camera_ctrl = camera.map(|cam| {
+            let mut ctrl = CameraController::new(cam);
+            if let Some(s) = camera_smoothness {
+                ctrl.set_smoothness(s);
+            }
+            let (min, max) = camera_zoom_limits;
+            if min.is_some() || max.is_some() {
+                ctrl.set_zoom_limits(min, max);
+            }
+            ctrl
+        });
+
+        let mut ctx = Context::new(renderer, size, camera_ctrl);
+        app.init(&mut ctx)?;
+
+        // The frame loop runs under catch_unwind: a panicking app is
+        // logged (panic hook), skipped past shutdown (state unknown), and
+        // surfaced as AppPanic → nonzero exit → systemd Restart=on-failure.
+        let loop_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let mut last_time = ctx.time();
+            while !ctx.exit_requested()
+                && !crate::signal::should_exit()
+                && !window.window_should_close()
+            {
+                let frame_start = ctx.time();
+                let dt = (frame_start - last_time) as f32;
+                last_time = frame_start;
+
+                // Dispatch queued input, capture-filtered against ImGui.
+                let want_keyboard = imgui.want_capture_keyboard();
+                let want_mouse = imgui.want_capture_mouse();
+                loop {
+                    let event = events.borrow_mut().pop_front();
+                    let Some(event) = event else { break };
+                    match event {
+                        Event::Key { .. } if want_keyboard => continue,
+                        Event::MouseButton { .. } | Event::Scroll { .. } if want_mouse => {
+                            continue
+                        }
+                        Event::Resize { width, height } => {
+                            ctx.set_size((width, height));
+                        }
+                        _ => {}
+                    }
+                    ctx.feed_camera(&event);
+                    app.on_event(&event, &mut ctx);
+                }
+
+                ctx.tick_camera(dt);
+                ctx.tick_fps();
+                app.update(&mut ctx, dt);
+
+                window.clear_color();
+                ctx.render_shapes();
+                app.draw(&mut ctx);
+
+                imgui.new_frame();
+                let ui = Ui::new(&imgui);
+                app.ui(&ui, &mut ctx);
+                imgui.render();
+
+                if let Some(fps) = target_fps {
+                    let budget = 1.0 / f64::from(fps.max(1));
+                    let elapsed = ctx.time() - frame_start;
+                    if elapsed < budget {
+                        std::thread::sleep(std::time::Duration::from_secs_f64(budget - elapsed));
+                    }
+                }
+
+                window.swap_buffers();
+                window.poll_events();
+            }
+        }));
+
+        match loop_result {
+            Ok(()) => {
+                app.shutdown(&mut ctx);
+                crate::log::info("kiosk session exiting cleanly");
+                Ok(())
+            }
+            Err(_) => Err(KioskError::AppPanic),
+        }
     }
 }
 

@@ -8,8 +8,10 @@ Designed for [WilhelmOS](https://github.com/algonents/wilhelmos) kiosk
 deployments (`systemd → cage → your app → OpenGL → DRM/KMS → display`), but
 runs on any desktop the underlying stack supports.
 
-> **Status: design + API skeleton.** The public API is in place and
-> compiles; frame-loop and component implementations are stubbed. See
+> **Status: working core.** The frame loop, typed events, `Ui`
+> guardrails, runtime services, and `FpsOverlay` are implemented
+> (`examples/hello_kiosk.rs` runs fullscreen and exits cleanly on
+> SIGTERM); the `Clock` and `StatusBar` components are still stubs. See
 > [docs/DESIGN.md](docs/DESIGN.md) for the full architecture and rationale.
 
 ## Why

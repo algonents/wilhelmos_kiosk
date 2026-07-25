@@ -1,6 +1,7 @@
 //! Per-frame framework context handed to every [`crate::KioskApp`] method.
 
-use wilhelm_renderer::core::{Camera2D, CameraController, Renderer};
+use crate::event::Event;
+use wilhelm_renderer::core::{Camera2D, CameraController, Renderable, Renderer};
 use wilhelm_renderer::graphics2d::shapes::ShapeRenderable;
 
 /// Stable handle to a shape owned by the framework's shape store.
@@ -27,10 +28,6 @@ pub struct Context {
     exit_requested: bool,
 }
 
-// The pub(crate) plumbing below is consumed by the frame loop
-// (`Kiosk::run`), which is still a stub; drop this allow when the loop
-// lands.
-#[allow(dead_code)]
 impl Context {
     pub(crate) fn new(
         renderer: Renderer,
@@ -89,6 +86,11 @@ impl Context {
         self.camera_ctrl.as_ref().map(|ctrl| ctrl.camera())
     }
 
+    /// Mutable world-camera access, for programmatic pan/zoom/centering.
+    pub fn camera_mut(&mut self) -> Option<&mut Camera2D> {
+        self.camera_ctrl.as_mut().map(|ctrl| ctrl.camera_mut())
+    }
+
     /// Exponentially-weighted average frames per second.
     pub fn fps(&self) -> f32 {
         self.fps.value()
@@ -116,9 +118,40 @@ impl Context {
     }
 
     /// Render all stored shapes in z-order without disturbing insertion
-    /// order (a sorted index is rebuilt instead of sorting the store).
+    /// order (a sorted index is rebuilt instead of sorting the store —
+    /// that is what keeps [`ShapeId`] lookups cheap and stable).
     pub(crate) fn render_shapes(&mut self) {
-        todo!("z-ordered render pass over the shape store — DESIGN.md §5")
+        let mut order: Vec<usize> = (0..self.shapes.len()).collect();
+        order.sort_by_key(|&i| self.shapes[i].1.z_order());
+        for i in order {
+            self.shapes[i].1.render(&self.renderer);
+        }
+    }
+
+    /// Forward an (already capture-filtered) event to the camera
+    /// controller, if one exists. This is the auto-wiring that replaces the
+    /// raw stack's manual `enable_camera` + block-flag dance.
+    pub(crate) fn feed_camera(&mut self, event: &Event) {
+        let Some(ctrl) = self.camera_ctrl.as_mut() else {
+            return;
+        };
+        match *event {
+            Event::MouseButton { button, action, .. } => {
+                ctrl.on_mouse_button(button.0, action.0);
+            }
+            Event::CursorPos { x, y } => ctrl.on_cursor_move(x, y),
+            Event::Scroll { y, .. } => ctrl.on_scroll(y),
+            Event::Resize { width, height } => {
+                ctrl.on_resize(width as f32, height as f32);
+            }
+            Event::Key { .. } => {}
+        }
+    }
+
+    pub(crate) fn tick_camera(&mut self, dt: f32) {
+        if let Some(ctrl) = self.camera_ctrl.as_mut() {
+            ctrl.update(dt);
+        }
     }
 
     pub(crate) fn tick_fps(&mut self) {
@@ -129,7 +162,6 @@ impl Context {
 
 /// Exponentially-weighted moving-average FPS counter (formula matching the
 /// one production apps hand-roll today; see DESIGN.md §5).
-#[cfg_attr(not(test), allow(dead_code))] // driven by the frame loop, still a stub
 struct FpsCounter {
     last_time: Option<f64>,
     ewma_frame_s: f32,

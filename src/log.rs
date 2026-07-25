@@ -25,7 +25,6 @@ pub fn error(msg: &str) {
 /// journald priority 2 (critical) before the process dies into the systemd
 /// unit's `Restart=on-failure`. Installed by `Kiosk::run`; chained on top
 /// of the default hook.
-#[allow(dead_code)] // installed by the frame loop (`Kiosk::run`), still a stub
 pub(crate) fn install_panic_hook() {
     let default_hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {

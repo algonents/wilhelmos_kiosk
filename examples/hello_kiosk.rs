@@ -3,11 +3,12 @@
 //! Compare with `wilhelmos-kiosk-demo/src/main.rs` (the raw-stack
 //! original): same behavior — a movable, scalable triangle with an ImGui
 //! control panel — but state lives in plain struct fields and there is not
-//! a single `Rc<RefCell<..>>` in sight.
+//! a single `Rc<RefCell<..>>` in sight. On top of the original: an FPS
+//! overlay (composed framework component) and Escape to exit.
 
 use wilhelmos_kiosk::{
-    Color, Context, Kiosk, KioskApp, KioskError, ShapeId, ShapeKind, ShapeRenderable, ShapeStyle,
-    Ui,
+    Color, Context, Event, FpsOverlay, Key, Kiosk, KioskApp, KioskError, ShapeId, ShapeKind,
+    ShapeRenderable, ShapeStyle, Ui,
 };
 use wilhelm_renderer::graphics2d::shapes::Triangle;
 
@@ -17,6 +18,7 @@ struct HelloApp {
     pos: (f32, f32),
     scale: f32,
     size: (f32, f32),
+    fps: FpsOverlay,
 }
 
 impl KioskApp for HelloApp {
@@ -50,7 +52,7 @@ impl KioskApp for HelloApp {
         }
     }
 
-    fn ui(&mut self, ui: &Ui<'_>, _ctx: &mut Context) {
+    fn ui(&mut self, ui: &Ui<'_>, ctx: &mut Context) {
         ui.window("Shape Controls", 0, |im| {
             im.text("Position");
             im.slider_float("X", &mut self.pos.0, 0.0, self.size.0);
@@ -59,6 +61,20 @@ impl KioskApp for HelloApp {
             im.text("Transform");
             im.slider_float("Scale", &mut self.scale, 0.1, 3.0);
         });
+        self.fps.ui(ui, ctx);
+    }
+
+    fn on_event(&mut self, event: &Event, ctx: &mut Context) {
+        if let Event::Key {
+            key: Key::ESCAPE,
+            action,
+            ..
+        } = event
+        {
+            if action.is_press() {
+                ctx.request_exit();
+            }
+        }
     }
 }
 

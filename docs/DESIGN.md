@@ -1,7 +1,9 @@
 # wilhelmos_kiosk — Design
 
-Status: v0.1.0 skeleton — API surface fixed, implementations stubbed
-(`todo!()`). This document is the authoritative record of what the crate is,
+Status: v0.1.0 — frame loop, events, `Ui` guardrails, runtime services and
+`FpsOverlay` implemented and smoke-tested (fullscreen run + SIGTERM clean
+exit); `Clock` and `StatusBar` still stubbed (`todo!()`). This document is
+the authoritative record of what the crate is,
 what it refuses to be, and why each decision was taken. Style and
 decision-log conventions follow `wilhelm_renderer/docs/DESIGN.md`.
 
@@ -108,6 +110,7 @@ camera_controller.update(dt)
 app.update(ctx, dt)
 clear
 render shape store in z-order (§5)
+app.draw(ctx)              ← custom renderer calls (world content, text runs)
 imgui.new_frame
   app.ui(ui, ctx)          ← only place ImGui widgets may be built
 imgui.render
@@ -136,6 +139,7 @@ One uniform, object-safe trait with defaulted methods:
 trait KioskApp {
     fn init(&mut self, ctx: &mut Context) -> Result<(), KioskError>;
     fn update(&mut self, ctx: &mut Context, dt: f32);
+    fn draw(&mut self, ctx: &mut Context);   // after shape pass, before UI
     fn ui(&mut self, ui: &Ui<'_>, ctx: &mut Context);
     fn on_event(&mut self, event: &Event, ctx: &mut Context);
     fn shutdown(&mut self, ctx: &mut Context);

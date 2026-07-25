@@ -4,8 +4,9 @@ Opinionated application framework for fullscreen kiosk apps, layered on
 `wilhelm_renderer` + `wilhelm_renderer_imgui`. Primary deployment target:
 WilhelmOS kiosk mode (`systemd → cage → app → OpenGL → DRM/KMS`).
 
-**Status: skeleton.** API surface is fixed and compiles; `Kiosk::run`, the
-`Ui` scoped helpers, and the component bodies are `todo!()` stubs.
+**Status: working core.** `Kiosk::run` (owned frame loop), events, the
+`Ui` scoped helpers, and `FpsOverlay` are implemented and smoke-tested;
+`Clock` and `StatusBar` bodies are still `todo!()` stubs.
 `docs/DESIGN.md` is the authoritative design record — read it before
 changing the API; it explains every decision, including the ones that look
 odd (owned loop, zero deps, no terminal component).
@@ -47,8 +48,6 @@ scripts and pass through this crate untouched.
   sandwich.
 - Tagged releases: no git deps in `Cargo.lock` (Yocto
   `cargo-update-recipe-crates` flow).
-- The stub-phase `#[allow(dead_code)]` markers come out when `Kiosk::run`
-  lands.
 
 ## Key files
 
