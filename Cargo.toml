@@ -1,0 +1,23 @@
+[package]
+name = "wilhelm_kiosk"
+version = "0.1.0"
+edition = "2021"
+authors = ["Anwar Ludin <anwar.ludin@algonents.com>"]
+description = "Opinionated application framework for fullscreen kiosk applications built on wilhelm_renderer and Dear ImGui"
+license = "MIT"
+repository = "https://github.com/algonents/wilhelm_kiosk"
+keywords = ["kiosk", "opengl", "gui", "framework", "graphics"]
+categories = ["gui", "graphics", "rendering"]
+exclude = ["CLAUDE.md"]
+
+# Release rule (family-wide): a tagged release must not contain git
+# dependencies in its lockfile — only published crates.io versions.
+#
+# Version lockstep rule: wilhelm_renderer pins wilhelm_renderer_sys with `=`,
+# and wilhelm_renderer_imgui depends on the same sys crate (`links =
+# "wilhelm_renderer"`). Any future bump of one of the two dependencies below
+# must be accompanied by a bump of the other so both resolve to a single sys
+# version, or the build fails on the links collision.
+[dependencies]
+wilhelm_renderer = "0.13.0"
+wilhelm_renderer_imgui = "0.10.0"
