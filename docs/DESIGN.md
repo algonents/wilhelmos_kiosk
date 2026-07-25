@@ -13,7 +13,7 @@ decision-log conventions follow `wilhelm_renderer/docs/DESIGN.md`.
 fullscreen kiosk applications on WilhelmOS, layered strictly above
 `wilhelm_renderer` (2D OpenGL engine) and `wilhelm_renderer_imgui` (Dear
 ImGui binding). It exists because both real consumers of the raw stack —
-the WilhelmOS reference app (`wilhelmos-kiosk-demo`) and the production
+the WilhelmOS reference app (`kiosk-app-demo`) and the production
 situation display (`sky_guard_client`) — independently rewrite the same
 boilerplate: window/App/ImGui initialization ordering, `Rc<RefCell<T>>`
 state shared between the two callback closures (the 67-line demo needs six
@@ -283,7 +283,7 @@ display application) for no operational need a status display has.
 - **No cargo features.** The family's build switches are environment
   variables consumed by the sys build scripts (`GLRENDERER_BUILD_X11`,
   `GLRENDERER_LINK_GL`); this crate adds none and passes those through
-  untouched — the WilhelmOS recipe pattern (`wilhelmos-kiosk-demo_git.bb`)
+  untouched — the WilhelmOS recipe pattern (`kiosk-app-demo_git.bb`)
   works unchanged for a wilhelmos_kiosk app.
 - **Release rule (family-wide):** a tagged release must have zero git
   dependencies in `Cargo.lock` — integrator apps are built by Yocto's

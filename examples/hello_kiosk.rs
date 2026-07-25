@@ -1,10 +1,13 @@
-//! The WilhelmOS reference demo, rewritten against wilhelmos_kiosk.
+//! The canonical wilhelmos_kiosk application example.
 //!
-//! Compare with `wilhelmos-kiosk-demo/src/main.rs` (the raw-stack
-//! original): same behavior — a movable, scalable triangle with an ImGui
-//! control panel — but state lives in plain struct fields and there is not
-//! a single `Rc<RefCell<..>>` in sight. On top of the original: an FPS
-//! overlay (composed framework component) and Escape to exit.
+//! Compare with the raw-stack original (`kiosk-app-demo` tag v0.1.0, when
+//! that repo was still written directly against wilhelm_renderer +
+//! wilhelm_renderer_imgui): same behavior — a movable, scalable triangle
+//! with an ImGui control panel — but state lives in plain struct fields
+//! and there is not a single `Rc<RefCell<..>>` in sight. On top of the
+//! original: an FPS overlay (composed framework component) and Escape to
+//! exit. The `kiosk-app-demo` repo now packages this same code for
+//! WilhelmOS — code lives here, the packaging contract lives there.
 
 use wilhelmos_kiosk::{
     Color, Context, Event, FpsOverlay, Key, Kiosk, KioskApp, KioskError, ShapeId, ShapeKind,

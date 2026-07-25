@@ -17,7 +17,7 @@ odd (owned loop, zero deps, no terminal component).
 |---|---|
 | `../wilhelm_renderer` | 2D OpenGL engine underneath (dep, 0.13.x) |
 | `../wilhelm_renderer_imgui` | Dear ImGui binding underneath (dep, 0.10.x) |
-| `../wilhelmos-kiosk-demo` | Reference app this framework absorbs (future consumer) |
+| `../kiosk-app-demo` | Reference app this framework absorbs (future consumer) |
 | `../sky_guard` | Production consumer-to-be (its Scene/FpsCounter/feed patterns shaped this design) |
 | `../wilhelmos` | The OS; its `docs/DESIGN.md` §7 defines the kiosk-app packaging contract |
 
