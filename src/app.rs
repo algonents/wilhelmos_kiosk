@@ -105,6 +105,34 @@ impl std::fmt::Display for KioskError {
 
 impl std::error::Error for KioskError {}
 
+/// Environment variable that sets the UI scale factor (`docs/DESIGN.md`
+/// §12). Set per deployment via `Environment=` in the kiosk session unit.
+const UI_SCALE_ENV: &str = "WILHELMOS_UI_SCALE";
+const UI_SCALE_MIN: f32 = 0.5;
+const UI_SCALE_MAX: f32 = 4.0;
+
+/// Parse a `WILHELMOS_UI_SCALE` value. Pure so it is unit-testable without
+/// touching process-global env state (tests run threaded). `None`/empty ⇒
+/// 1.0 silently; unparseable, non-finite, or outside [0.5, 4.0] ⇒ 1.0 with
+/// a journald warning.
+fn resolve_ui_scale(raw: Option<&str>) -> f32 {
+    let Some(raw) = raw else { return 1.0 };
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return 1.0;
+    }
+    match trimmed.parse::<f32>() {
+        Ok(v) if v.is_finite() && (UI_SCALE_MIN..=UI_SCALE_MAX).contains(&v) => v,
+        _ => {
+            crate::log::warn(&format!(
+                "ignoring {UI_SCALE_ENV}={trimmed:?}: expected a number in \
+                 [{UI_SCALE_MIN}, {UI_SCALE_MAX}]; using 1.0"
+            ));
+            1.0
+        }
+    }
+}
+
 /// Builder + runner. Owns the fullscreen window, the frame loop, and the
 /// init-order invariant (window callbacks → ImGui → renderer → app init).
 ///
@@ -191,6 +219,10 @@ impl Kiosk {
     /// SIGTERM/SIGINT arrives; returns [`KioskError::AppPanic`] if the
     /// application panicked (callers should exit nonzero so systemd's
     /// `Restart=on-failure` takes over).
+    ///
+    /// Reads the `WILHELMOS_UI_SCALE` environment variable at startup and
+    /// applies it to the ImGui chrome and [`Context::ui_scale`]
+    /// (`docs/DESIGN.md` §12); absent or invalid values mean 1.0.
     pub fn run(self, mut app: impl KioskApp) -> Result<(), KioskError> {
         let Kiosk {
             title,
@@ -203,6 +235,10 @@ impl Kiosk {
 
         crate::log::install_panic_hook();
         crate::signal::install();
+
+        // Read early so an invalid value warns at the top of the journal.
+        // Non-UTF-8 values become None via .ok() → silent 1.0.
+        let ui_scale = resolve_ui_scale(std::env::var(UI_SCALE_ENV).ok().as_deref());
 
         // The Box<Window> is FFI-load-bearing (GLFW user pointer) and must
         // never be moved out; it lives on this stack frame for the whole
@@ -250,6 +286,11 @@ impl Kiosk {
         // Drop (ImGui/GL backend shutdown) runs before the window's.
         let imgui = ImGui::new(window.glfw_window_ptr(), true);
 
+        // Unconditional (1.0 included) so chrome is deterministic on every
+        // platform and the path is exercised on every run. Resets the ImGui
+        // style, so it must precede any future style customization.
+        imgui.set_ui_scale(ui_scale);
+
         let renderer = Renderer::new(window.handle());
 
         let camera_ctrl = camera.map(|cam| {
@@ -264,7 +305,7 @@ impl Kiosk {
             ctrl
         });
 
-        let mut ctx = Context::new(renderer, size, camera_ctrl);
+        let mut ctx = Context::new(renderer, size, camera_ctrl, ui_scale);
         app.init(&mut ctx)?;
 
         // The frame loop runs under catch_unwind: a panicking app is
@@ -344,4 +385,38 @@ mod tests {
     /// The trait must stay object-safe (FFI-promotable, DESIGN.md §4).
     #[allow(dead_code)]
     fn assert_object_safe(_app: &dyn KioskApp) {}
+
+    #[test]
+    fn ui_scale_absent_is_one() {
+        assert_eq!(resolve_ui_scale(None), 1.0);
+    }
+
+    #[test]
+    fn ui_scale_empty_is_one() {
+        assert_eq!(resolve_ui_scale(Some("")), 1.0);
+        assert_eq!(resolve_ui_scale(Some("   ")), 1.0);
+    }
+
+    #[test]
+    fn ui_scale_parses_fractional() {
+        assert_eq!(resolve_ui_scale(Some("1.5")), 1.5);
+    }
+
+    #[test]
+    fn ui_scale_trims_whitespace() {
+        assert_eq!(resolve_ui_scale(Some(" 2 ")), 2.0);
+    }
+
+    #[test]
+    fn ui_scale_accepts_bounds() {
+        assert_eq!(resolve_ui_scale(Some("0.5")), 0.5);
+        assert_eq!(resolve_ui_scale(Some("4")), 4.0);
+    }
+
+    #[test]
+    fn ui_scale_rejects_garbage() {
+        for bad in ["abc", "NaN", "inf", "0", "-1", "0.49", "4.01", "1,5"] {
+            assert_eq!(resolve_ui_scale(Some(bad)), 1.0, "{bad}");
+        }
+    }
 }

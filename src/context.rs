@@ -25,6 +25,7 @@ pub struct Context {
     camera_ctrl: Option<CameraController>,
     size: (i32, i32),
     fps: FpsCounter,
+    ui_scale: f32,
     exit_requested: bool,
 }
 
@@ -33,6 +34,7 @@ impl Context {
         renderer: Renderer,
         size: (i32, i32),
         camera_ctrl: Option<CameraController>,
+        ui_scale: f32,
     ) -> Self {
         Self {
             renderer,
@@ -41,6 +43,7 @@ impl Context {
             camera_ctrl,
             size,
             fps: FpsCounter::new(),
+            ui_scale,
             exit_requested: false,
         }
     }
@@ -94,6 +97,16 @@ impl Context {
     /// Exponentially-weighted average frames per second.
     pub fn fps(&self) -> f32 {
         self.fps.value()
+    }
+
+    /// UI scale factor for chrome and text — world content is never scaled
+    /// (camera zoom is the semantic scale of the picture). Sourced from the
+    /// `WILHELMOS_UI_SCALE` environment variable at startup; 1.0 when absent
+    /// or invalid. Components multiply their base font sizes by this at
+    /// `FontAtlas` creation; applications can use it for DPI-aware marker
+    /// sizes and line widths. See `docs/DESIGN.md` §12.
+    pub fn ui_scale(&self) -> f32 {
+        self.ui_scale
     }
 
     /// Seconds since renderer initialization (monotonic; wraps

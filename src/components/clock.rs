@@ -39,6 +39,10 @@ impl Clock {
     /// `size_px` pixels. The font file is loaded in `init` (a GL context
     /// is required to build the glyph atlas), so a bad path fails there,
     /// not here.
+    ///
+    /// `size_px` is a *base (unscaled)* size: `init` multiplies it by
+    /// [`Context::ui_scale`] before building the atlas (`docs/DESIGN.md`
+    /// §12).
     pub fn new(font_path: &str, size_px: u32) -> Self {
         Self {
             font_path: font_path.to_string(),
@@ -57,7 +61,8 @@ impl KioskApp for Clock {
     fn init(&mut self, ctx: &mut Context) -> Result<(), KioskError> {
         let _ = ctx;
         todo!(
-            "build FontAtlas from {:?} at {}px — DESIGN.md §8",
+            "build FontAtlas from {:?} at (self.size_px={} as f32 * \
+             ctx.ui_scale()).round().max(1.0) as u32 px — DESIGN.md §8, §12",
             self.font_path,
             self.size_px
         )

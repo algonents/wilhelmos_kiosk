@@ -20,4 +20,10 @@ exclude = ["CLAUDE.md"]
 # version, or the build fails on the links collision.
 [dependencies]
 wilhelm_renderer = "0.13.0"
-wilhelm_renderer_imgui = "0.10.0"
+wilhelm_renderer_imgui = "0.11.0"
+
+# TEMPORARY until wilhelm_renderer_imgui 0.11.0 is on crates.io — must be
+# removed before tagging (release rule above: crates.io-only lockfile at a
+# tag).
+[patch.crates-io]
+wilhelm_renderer_imgui = { path = "../wilhelm_renderer_imgui" }

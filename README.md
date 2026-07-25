@@ -72,6 +72,14 @@ fn main() -> Result<(), KioskError> {
 See [`examples/hello_kiosk.rs`](examples/hello_kiosk.rs) — the WilhelmOS
 reference demo rewritten against the framework, with zero `Rc<RefCell<..>>`.
 
+## Runtime configuration
+
+`WILHELMOS_UI_SCALE` (e.g. `1.5`) scales the UI chrome and text for
+high-DPI panels — set it via `Environment=` in the kiosk session unit.
+Accepted range 0.5–4.0; absent or invalid means 1.0. World content is
+never scaled (camera zoom is the semantic scale). See
+[`docs/DESIGN.md`](docs/DESIGN.md) §12.
+
 ## Build requirements
 
 Same as the underlying stack (CMake + native GLFW/FreeType/ImGui builds;

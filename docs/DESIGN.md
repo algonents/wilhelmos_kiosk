@@ -40,7 +40,7 @@ Deliberate scope boundaries *(decided 2026-07-25)*:
   engineering with no containment payoff — see §2 and §4).
 - **Not a widget toolkit, not a data-distribution layer.** Widgets are Dear
   ImGui's job; domain symbology is `wilhelm_renderer_symbols`' job; data
-  feeds stay application-side (v2 will add a bridge *helper*, §12).
+  feeds stay application-side (v2 will add a bridge *helper*, §13).
 
 ## 2. Certification context
 
@@ -129,7 +129,7 @@ GLFW's user pointer) → **framework window callbacks registered before**
 Threading: the entire stack is single-threaded by design (thread-local
 shaders in the renderer, `ImGui` is `!Send + !Sync`). The framework runs
 everything on the main thread and documents it; background work
-communicates via channels (§12).
+communicates via channels (§13).
 
 ## 4. The `KioskApp` trait *(decided 2026-07-25)*
 
@@ -314,11 +314,68 @@ To file upstream (nice-to-haves; none block this crate):
 - `wilhelm_renderer`: export `WindowHandle`; `Window::set_should_close`;
   pass `dt` to `App` callbacks + an `on_shutdown` hook; full GLFW key
   constant set.
+- `wilhelm_renderer`: monitor physical size (for the §12 DPI
+  auto-detect fallback).
 - `wilhelm_renderer_imgui`: custom TTF font loading
   (`AddFontFromFileTTF`); safe wrappers for `push_style_var_*`; an
-  ini-disable binding; consider auto `apply_dpi_scale` beyond Windows.
+  ini-disable binding. ~~An explicit UI-scale entry point,
+  `imgui_set_ui_scale(scale)`~~ — *shipped in `wilhelm_renderer_imgui`
+  0.11.0* (needed by §12, since `apply_dpi_scale` only reads GLFW's
+  content scale, always 1.0 under cage).
 
-## 12. Roadmap (deferred beyond v1)
+## 12. UI scaling (DPI) *(agreed & implemented 2026-07-26; meta-wilhelmos `Environment=` pending)*
+
+**Problem.** cage maps the panel at its native mode with Wayland output
+scale 1.0, so GLFW reports a content scale of 1.0 and the application
+draws in raw physical pixels — on a 4K panel a 16 px glyph is ~2 mm
+tall. Nothing in the stack scales anything today:
+`wilhelm_renderer_imgui`'s existing `apply_dpi_scale` is inert here (it
+reads GLFW's content scale, which is always 1.0 under cage; it was
+written for Windows and only rebuilds ImGui's default 13 px bitmap font
+anyway).
+
+**Option A — compositor-side scaling (rejected).** cage has no scale
+flag, but it implements `wlr-output-management`, so the image could ship
+`wlr-randr` and set output scale at session start. Rejected because:
+integer scales only (2× on 4K is too much; 1.5× would need the
+fractional-scale protocol, which GLFW does not speak), it adds a package
+to the certified image, and it splits sizing logic between compositor
+and application. The variant of setting a lower video mode instead lets
+the panel upscale — blurry, unacceptable for a situation display.
+
+**Option B — framework-owned `ui_scale` (chosen).** The output stays at
+native resolution, scale 1.0; this crate is the single owner of a
+`ui_scale` factor, applied at the points where pixels are generated:
+
+- **Source of truth:** a `WILHELMOS_UI_SCALE` environment variable
+  (e.g. `1.5`), set per deployment via `Environment=` in
+  `cage-kiosk.service` (or a drop-in) — QEMU and a 4K bare-metal box
+  differ only in config. Absent/invalid ⇒ 1.0. Auto-detection from
+  monitor physical size (DPI) is deferred: it needs an upstream
+  `wilhelm_renderer` API (§11) and would only be a fallback when the
+  variable is unset.
+- **Exposure:** `Context::ui_scale()`; read by components and available
+  to applications for DPI-aware marker sizes / line widths.
+- **ImGui chrome:** needs a new explicit-scale entry point in
+  `wilhelm_renderer_imgui` (`imgui_set_ui_scale(scale)`:
+  `style.ScaleAllSizes(scale)` + rebuild the font at `13 × scale`) —
+  the existing content-scale-reading one cannot be told a factor. The
+  framework calls it once at init.
+- **Renderer text:** freetype rasterizes at a pixel size, so the
+  framework and components (§8) multiply their base font sizes by
+  `ui_scale` at `FontAtlas` creation — text stays pixel-crisp at any
+  fractional scale because it is rasterized at final size, never
+  upscaled.
+- **World content is deliberately not scaled:** camera zoom is the
+  semantic scale of the situation picture; DPI scaling affects chrome
+  and text only.
+
+Work split: `wilhelm_renderer_imgui` (explicit-scale API + version
+bump), this crate (`ui_scale` in `Context`, ImGui init call, component
+font sizing), `meta-wilhelmos` (set the variable in the kiosk session
+unit).
+
+## 13. Roadmap (deferred beyond v1)
 
 - **Async data-feed bridge** — the headline v2 item. sky_guard's
   production pattern: a `std::thread` hosting a tokio runtime, pushing

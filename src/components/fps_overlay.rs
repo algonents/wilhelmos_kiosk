@@ -27,7 +27,8 @@ impl KioskApp for FpsOverlay {
             | window_flags::NO_MOVE
             | window_flags::ALWAYS_AUTO_RESIZE
             | window_flags::NO_MOUSE_INPUTS;
-        ui.window_at("fps_overlay", (12.0, 12.0), None, flags, |im| {
+        let s = ctx.ui_scale();
+        ui.window_at("fps_overlay", (12.0 * s, 12.0 * s), None, flags, |im| {
             im.text(&format!("{fps:5.1} FPS"));
         });
     }
