@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Removed
+
+- `examples/hello_kiosk.rs`: the crate ships no example anymore —
+  [kiosk-app-demo](https://github.com/algonents/kiosk-app-demo) is the
+  single canonical reference application (DESIGN.md §1, one-app rule).
+  The example's Escape→exit binding is gone with it: no key may reach
+  the clean-exit path in a kiosk app (DESIGN.md §3); desktop test runs
+  exit via Ctrl+C.
+
 ## [0.2.0] - 2026-07-26
 
 ### Added

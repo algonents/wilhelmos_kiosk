@@ -17,7 +17,7 @@ odd (owned loop, zero deps, no terminal component).
 |---|---|
 | `../wilhelm_renderer` | 2D OpenGL engine underneath (dep, 0.13.x) |
 | `../wilhelm_renderer_imgui` | Dear ImGui binding underneath (dep, 0.10.x) |
-| `../kiosk-app-demo` | Reference app this framework absorbs (future consumer) |
+| `../kiosk-app-demo` | The canonical example: illustrates this crate in practice + the packaging contract. This repo ships no example of its own (single-source rule, no drift) |
 | `../sky_guard` | Production consumer-to-be (its Scene/FpsCounter/feed patterns shaped this design) |
 | `../wilhelmos` | The OS; its `docs/DESIGN.md` §7 defines the kiosk-app packaging contract |
 
@@ -57,5 +57,5 @@ scripts and pass through this crate untouched.
 - `src/ui.rs` — scoped ImGui guardrails
 - `src/log.rs`, `src/signal.rs` — journald logging + SIGTERM flag (complete)
 - `src/components/` — Clock, StatusBar, FpsOverlay
-- `examples/hello_kiosk.rs` — the reference demo rewritten on the framework
-- `docs/DESIGN.md` — the design record (12 sections)
+- `docs/DESIGN.md` — the design record (13 sections)
+- No `examples/` — `../kiosk-app-demo` is the reference application

@@ -9,9 +9,9 @@ deployments (`systemd → cage → your app → OpenGL → DRM/KMS → display`)
 runs on any desktop the underlying stack supports.
 
 > **Status: working core.** The frame loop, typed events, `Ui`
-> guardrails, runtime services, and `FpsOverlay` are implemented
-> (`examples/hello_kiosk.rs` runs fullscreen and exits cleanly on
-> SIGTERM); the `Clock` and `StatusBar` components are still stubs. See
+> guardrails, runtime services, and `FpsOverlay` are implemented and
+> smoke-tested (fullscreen run, clean SIGTERM exit); the `Clock` and
+> `StatusBar` components are still stubs. See
 > [docs/DESIGN.md](docs/DESIGN.md) for the full architecture and rationale.
 
 ## Why
@@ -69,8 +69,11 @@ fn main() -> Result<(), KioskError> {
 }
 ```
 
-See [`examples/hello_kiosk.rs`](examples/hello_kiosk.rs) — the WilhelmOS
-reference demo rewritten against the framework, with zero `Rc<RefCell<..>>`.
+For a complete application — including the WilhelmOS packaging contract
+(committed lockfile, release tags, Yocto recipe consumption) — see
+[kiosk-app-demo](https://github.com/algonents/kiosk-app-demo), the
+canonical reference app. This repo deliberately ships no example of its
+own, so there is exactly one app to keep current.
 
 ## Runtime configuration
 

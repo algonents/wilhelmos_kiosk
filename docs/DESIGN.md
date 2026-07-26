@@ -41,6 +41,11 @@ Deliberate scope boundaries *(decided 2026-07-25)*:
 - **Not a widget toolkit, not a data-distribution layer.** Widgets are Dear
   ImGui's job; domain symbology is `wilhelm_renderer_symbols`' job; data
   feeds stay application-side (v2 will add a bridge *helper*, §13).
+- **One canonical application, not two** *(decided 2026-07-26)*: this repo
+  ships no `examples/` — `kiosk-app-demo` is the single reference app,
+  illustrating both the framework in practice and the packaging contract.
+  The in-repo `hello_kiosk` example (0.1.0–0.2.0) mirrored it and the two
+  immediately drifted; mirrored apps rot, one app cannot.
 
 ## 2. Certification context
 
@@ -92,7 +97,14 @@ What owning the loop buys, concretely:
 - **Programmatic exit today**: the loop condition is
   `!exit_requested && !signal::should_exit() && !window.window_should_close()`,
   so `Context::request_exit()` and SIGTERM-clean-exit need no upstream
-  change.
+  change. **No key is bound to exit — not by the framework, the example,
+  or the reference app** *(decided 2026-07-26)*: a clean exit returns 0,
+  which `Restart=on-failure` deliberately does not restart, so an
+  exit-bound key (`kiosk-app-demo` briefly shipped Escape→`request_exit`)
+  is a black-screen button on the operator seat. `request_exit()` is for
+  application logic; interactive lifecycle is the supervisor's
+  (`systemctl stop`), and desktop test runs exit via Ctrl+C, which
+  exercises the same clean shutdown path (§9).
 - Ordered shutdown: `app.shutdown(ctx)` → drop ImGui (its `Drop` must run
   before GL teardown) → drop window.
 - Optional frame pacing (`Kiosk::target_fps`) for 24/7 operation on
