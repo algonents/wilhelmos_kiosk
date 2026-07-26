@@ -1032,6 +1032,8 @@ dependencies = [
 [[package]]
 name = "wilhelm_renderer_imgui"
 version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d7a5d9c00d1f88187b67dc68b491293b0c031373a4e2461febf810e6ecf6a053"
 dependencies = [
  "cmake",
  "wilhelm_renderer_sys",
