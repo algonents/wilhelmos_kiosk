@@ -196,6 +196,17 @@ also part of the FFI-promotability story (§4).
 tracks the framebuffer size itself, updated from resize events. Upstream
 issue filed (§11).
 
+**Init-time camera installation** *(added 0.3.0, driven by the sky_guard
+migration)*: a situation display's camera depends on loaded data (map
+bbox) *and* the real fullscreen size — neither exists when the `Kiosk`
+builder runs. `Context::set_camera` installs/replaces the camera from
+`init` by **rebuilding** the `CameraController`, because the controller
+keeps private animation targets that `camera_mut()` cannot reset — with
+smoothing enabled, a camera repositioned through `camera_mut` rubber-bands
+back to the stale targets (documented on the method; regression-tested).
+Builder smoothness/zoom limits are mirrored in `Context` and re-applied on
+rebuild; `Context::set_camera_zoom_limits` covers data-derived limits.
+
 ## 6. Events and capture filtering
 
 The raw stack exposes five separate `'static` closures taking raw `i32`

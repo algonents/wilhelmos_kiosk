@@ -1,6 +1,6 @@
 [package]
 name = "wilhelmos_kiosk"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Anwar Ludin <anwar.ludin@algonents.com>"]
 description = "Opinionated application framework for fullscreen kiosk applications built on wilhelm_renderer and Dear ImGui"

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-26
+
+### Added
+
+- Migration enablers driven by the sky_guard_client port (the framework's
+  first production consumer):
+  - `Kiosk::imgui_config_flags(i32)` — ImGui IO config flags (e.g.
+    `config_flags::NAV_ENABLE_KEYBOARD`) applied once at startup;
+    `config_flags` is now re-exported alongside `window_flags`.
+  - `Context::set_camera(Camera2D)` — install or replace the world camera
+    from `KioskApp::init`, for cameras that depend on loaded data and the
+    real screen size. Rebuilds the camera controller so its animation
+    targets reset to the new state (repositioning via `camera_mut()`
+    rubber-bands under smoothing — now documented on `camera_mut`).
+    Builder-configured smoothness/zoom limits are re-applied.
+  - `Context::set_camera_zoom_limits(min, max)` — runtime zoom limits,
+    e.g. derived from data loaded in `init`.
+
 ### Removed
 
 - `examples/hello_kiosk.rs`: the crate ships no example anymore —
