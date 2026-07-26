@@ -57,4 +57,4 @@ pub use ui::Ui;
 // directly — both are public dependencies of this one.
 pub use wilhelm_renderer::core::{Camera2D, Color, Renderer};
 pub use wilhelm_renderer::graphics2d::shapes::{ShapeKind, ShapeRenderable, ShapeStyle};
-pub use wilhelm_renderer_imgui::{window_flags, ImGui};
+pub use wilhelm_renderer_imgui::{config_flags, window_flags, ImGui};

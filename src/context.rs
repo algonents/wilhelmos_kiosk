@@ -23,6 +23,11 @@ pub struct Context {
     shapes: Vec<(ShapeId, ShapeRenderable)>,
     next_shape_id: u64,
     camera_ctrl: Option<CameraController>,
+    // Builder-configured camera parameters, mirrored here because
+    // `CameraController` exposes no getters — [`Self::set_camera`] rebuilds
+    // the controller and must re-apply them.
+    camera_smoothness: Option<f32>,
+    camera_zoom_limits: (Option<f32>, Option<f32>),
     size: (i32, i32),
     fps: FpsCounter,
     ui_scale: f32,
@@ -34,6 +39,8 @@ impl Context {
         renderer: Renderer,
         size: (i32, i32),
         camera_ctrl: Option<CameraController>,
+        camera_smoothness: Option<f32>,
+        camera_zoom_limits: (Option<f32>, Option<f32>),
         ui_scale: f32,
     ) -> Self {
         Self {
@@ -41,6 +48,8 @@ impl Context {
             shapes: Vec::new(),
             next_shape_id: 0,
             camera_ctrl,
+            camera_smoothness,
+            camera_zoom_limits,
             size,
             fps: FpsCounter::new(),
             ui_scale,
@@ -89,9 +98,47 @@ impl Context {
         self.camera_ctrl.as_ref().map(|ctrl| ctrl.camera())
     }
 
-    /// Mutable world-camera access, for programmatic pan/zoom/centering.
+    /// Mutable world-camera access.
+    ///
+    /// **Repositioning caveat:** the camera controller keeps its own
+    /// animation targets, which this accessor does not touch — with
+    /// smoothing enabled, a camera moved through `camera_mut` rubber-bands
+    /// back toward the old targets on subsequent frames. To reposition or
+    /// rescale the camera programmatically, use [`Self::set_camera`], which
+    /// resets the targets to the new state.
     pub fn camera_mut(&mut self) -> Option<&mut Camera2D> {
         self.camera_ctrl.as_mut().map(|ctrl| ctrl.camera_mut())
+    }
+
+    /// Install or replace the world camera, resetting the controller's
+    /// animation targets to the new state.
+    ///
+    /// This is the [`crate::KioskApp::init`]-time path for applications
+    /// whose camera depends on loaded data and the real screen size —
+    /// neither is known when the [`crate::Kiosk`] builder runs. Creates the
+    /// controller if the builder configured no camera; builder-configured
+    /// smoothness and zoom limits (or ones set via
+    /// [`Self::set_camera_zoom_limits`]) are re-applied.
+    pub fn set_camera(&mut self, camera: Camera2D) {
+        let mut ctrl = CameraController::new(camera);
+        if let Some(s) = self.camera_smoothness {
+            ctrl.set_smoothness(s);
+        }
+        let (min, max) = self.camera_zoom_limits;
+        if min.is_some() || max.is_some() {
+            ctrl.set_zoom_limits(min, max);
+        }
+        self.camera_ctrl = Some(ctrl);
+    }
+
+    /// Set or replace the camera zoom limits at runtime — e.g. derived from
+    /// data loaded in [`crate::KioskApp::init`]. Applies to the current
+    /// camera and to any later [`Self::set_camera`].
+    pub fn set_camera_zoom_limits(&mut self, min: Option<f32>, max: Option<f32>) {
+        self.camera_zoom_limits = (min, max);
+        if let Some(ctrl) = self.camera_ctrl.as_mut() {
+            ctrl.set_zoom_limits(min, max);
+        }
     }
 
     /// Exponentially-weighted average frames per second.
@@ -214,6 +261,46 @@ impl FpsCounter {
 #[cfg(test)]
 mod tests {
     use super::FpsCounter;
+    use wilhelm_renderer::core::{Camera2D, CameraController, Vec2};
+
+    /// The invariant [`super::Context::set_camera`] relies on: a freshly
+    /// built controller initializes its animation targets from the camera,
+    /// so smoothing does not drift a just-installed camera. (Context itself
+    /// needs a live Renderer/GL context, so the test targets the controller
+    /// rebuild directly.)
+    #[test]
+    fn rebuilt_controller_holds_installed_camera_under_smoothing() {
+        let camera = Camera2D::new(Vec2::new(500.0, -300.0), 2.5, Vec2::new(1920.0, 1080.0));
+        let mut ctrl = CameraController::new(camera);
+        ctrl.set_smoothness(8.0);
+        for _ in 0..100 {
+            ctrl.update(1.0 / 60.0);
+        }
+        assert_eq!(ctrl.camera().center(), camera.center());
+        assert_eq!(ctrl.camera().scale(), camera.scale());
+    }
+
+    /// The documented `camera_mut` foot-gun: mutating the camera without
+    /// resetting targets rubber-bands back under smoothing. If this ever
+    /// stops failing-by-design (i.e. upstream starts syncing targets), the
+    /// `set_camera` rebuild and its doc caveat can be simplified.
+    #[test]
+    fn direct_camera_mutation_rubber_bands_under_smoothing() {
+        let camera = Camera2D::new(Vec2::new(0.0, 0.0), 1.0, Vec2::new(1920.0, 1080.0));
+        let mut ctrl = CameraController::new(camera);
+        ctrl.set_smoothness(8.0);
+        ctrl.camera_mut().set_center(Vec2::new(500.0, -300.0));
+        for _ in 0..600 {
+            ctrl.update(1.0 / 60.0);
+        }
+        let drifted = ctrl.camera().center();
+        assert!(
+            (drifted.x - 500.0).abs() > 400.0,
+            "camera_mut moves are expected to rubber-band back toward the \
+             stale target; got x={} (upstream behavior changed?)",
+            drifted.x
+        );
+    }
 
     #[test]
     fn fps_counter_converges_to_frame_rate() {

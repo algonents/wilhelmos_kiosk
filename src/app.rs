@@ -153,6 +153,7 @@ pub struct Kiosk {
     camera_smoothness: Option<f32>,
     camera_zoom_limits: (Option<f32>, Option<f32>),
     target_fps: Option<u32>,
+    imgui_config_flags: i32,
 }
 
 impl Kiosk {
@@ -166,6 +167,7 @@ impl Kiosk {
             camera_smoothness: None,
             camera_zoom_limits: (None, None),
             target_fps: None,
+            imgui_config_flags: 0,
         }
     }
 
@@ -194,6 +196,14 @@ impl Kiosk {
     /// Camera zoom limits (only meaningful with [`Kiosk::with_camera`]).
     pub fn camera_zoom_limits(mut self, min: Option<f32>, max: Option<f32>) -> Self {
         self.camera_zoom_limits = (min, max);
+        self
+    }
+
+    /// OR-ed ImGui IO config flags (see [`crate::config_flags`], e.g.
+    /// `config_flags::NAV_ENABLE_KEYBOARD`), applied once at startup right
+    /// after ImGui creation. Default: none.
+    pub fn imgui_config_flags(mut self, flags: i32) -> Self {
+        self.imgui_config_flags = flags;
         self
     }
 
@@ -231,6 +241,7 @@ impl Kiosk {
             camera_smoothness,
             camera_zoom_limits,
             target_fps,
+            imgui_config_flags,
         } = self;
 
         crate::log::install_panic_hook();
@@ -291,6 +302,10 @@ impl Kiosk {
         // style, so it must precede any future style customization.
         imgui.set_ui_scale(ui_scale);
 
+        if imgui_config_flags != 0 {
+            imgui.set_config_flags(imgui_config_flags);
+        }
+
         let renderer = Renderer::new(window.handle());
 
         let camera_ctrl = camera.map(|cam| {
@@ -305,7 +320,14 @@ impl Kiosk {
             ctrl
         });
 
-        let mut ctx = Context::new(renderer, size, camera_ctrl, ui_scale);
+        let mut ctx = Context::new(
+            renderer,
+            size,
+            camera_ctrl,
+            camera_smoothness,
+            camera_zoom_limits,
+            ui_scale,
+        );
         app.init(&mut ctx)?;
 
         // The frame loop runs under catch_unwind: a panicking app is
