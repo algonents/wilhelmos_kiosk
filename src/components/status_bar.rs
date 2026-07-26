@@ -19,6 +19,10 @@ pub struct StatusBar {
 impl StatusBar {
     /// A status bar `height_px` tall, rendering text with the TrueType
     /// font at `font_path`. Fonts load in `init` (GL context required).
+    ///
+    /// `height_px` is a *base (unscaled)* height: `init` multiplies it —
+    /// and the derived font size — by [`Context::ui_scale`]
+    /// (`docs/DESIGN.md` §12).
     pub fn new(font_path: &str, height_px: f32) -> Self {
         Self {
             font_path: font_path.to_string(),
@@ -50,7 +54,8 @@ impl KioskApp for StatusBar {
     fn init(&mut self, ctx: &mut Context) -> Result<(), KioskError> {
         let _ = ctx;
         todo!(
-            "background rect ({}px) + FontAtlas from {:?} — DESIGN.md §8",
+            "background rect ({}px * ctx.ui_scale()) + FontAtlas from {:?} \
+             at a ui_scale-multiplied size — DESIGN.md §8, §12",
             self.height_px,
             self.font_path
         )

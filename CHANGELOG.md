@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- UI scaling (DPI) per `docs/DESIGN.md` §12: the `WILHELMOS_UI_SCALE`
+  environment variable (accepted range 0.5–4.0; absent/invalid ⇒ 1.0 with
+  a journald warning) scales the ImGui chrome at init (via the new
+  `wilhelm_renderer_imgui 0.11.0` `set_ui_scale` API) and is exposed as
+  `Context::ui_scale()` for components and applications. World content
+  (camera) is deliberately not scaled. `FpsOverlay` scales its position;
+  `Clock`/`StatusBar` will multiply their base sizes when implemented.
+  Follow-up (separate repo): set the variable via `Environment=` in
+  meta-wilhelmos' `cage-kiosk.service`.
+
+### Changed
+
+- `wilhelm_renderer_imgui` dependency: 0.10.0 → 0.11.0.
+
 ## [0.1.0] - 2026-07-26
 
 ### Added
